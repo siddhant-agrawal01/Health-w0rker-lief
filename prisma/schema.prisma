@@ -27,12 +27,14 @@ model Hospital {
 }
 
 model Shift {
-  id        String  @id @default(uuid())
-  userId    String
-  user      User    @relation(fields: [userId], references: [id])
-  startTime DateTime
-  endTime   DateTime?
-  latitude  Decimal
-  longitude Decimal
-  note      String?
+
+id         String   @id @default(uuid())
+  userId     String
+    user      User    @relation(fields: [userId], references: [id])
+
+  startTime  String
+  endTime    String?
+  latitude   Float
+  longitude  Float
+  note       String?
 }
