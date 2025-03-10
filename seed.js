@@ -21,7 +21,7 @@ async function seed() {
       name: 'Ashish Hospital Narsinghpur',
       latitude: 22.951065349454016,
       longitude: 79.1878753360974,
-      radius: 5.0, // 5 km radius for testing
+      radius: 100.0, // 5 km radius for testing
     },
   });
 

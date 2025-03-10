@@ -1,3 +1,5 @@
+scalar DateTime
+
 type User {
   id: String!
   name: String!
@@ -20,8 +22,8 @@ type Shift {
   id: String!
   userId: String!
   user: User
-  startTime: String!
-  endTime: String
+  startTime: DateTime!
+  endTime: DateTime
   latitude: Float!
   longitude: Float!
   note: String
@@ -32,13 +34,19 @@ type Query {
   user(id: String!): User
   hospitals: [Hospital]
   hospital(id: String!): Hospital
-  shifts: [Shift]
+  shifts(where: ShiftWhereInput): [Shift]  # Add the where argument
   shift(id: String!): Shift
 }
 
 type Mutation {
   createUser(name: String!, email: String!, role: String!, hospitalId: String): User
   createHospital(name: String!, latitude: Float!, longitude: Float!, radius: Float!): Hospital
-  createShift(userId: String!, startTime: String!, latitude: Float!, longitude: Float!, note: String): Shift
-  updateShift(id: String!, endTime: String, note: String): Shift
+  createShift(userId: String!, startTime: DateTime!, latitude: Float!, longitude: Float!, note: String): Shift
+  updateShift(id: String!, endTime: DateTime, note: String): Shift
+}
+
+input ShiftWhereInput {
+  userId: String
+  endTime: DateTime
+  endTime_not: DateTime
 }

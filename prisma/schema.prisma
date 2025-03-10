@@ -27,13 +27,11 @@ model Hospital {
 }
 
 model Shift {
-
-id         String   @id @default(uuid())
+  id         String   @id @default(uuid())
   userId     String
-    user      User    @relation(fields: [userId], references: [id])
-
-  startTime  String
-  endTime    String?
+  user       User     @relation(fields: [userId], references: [id])
+  startTime  DateTime // Changed from String
+  endTime    DateTime? // Changed from String?
   latitude   Float
   longitude  Float
   note       String?
