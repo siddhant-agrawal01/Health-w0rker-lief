@@ -6,6 +6,7 @@ import { request } from "graphql-request";
 export default function ClientClockComponent() {
   const { data: session, status } = useSession();
   const [location, setLocation] = useState(null);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState("");
@@ -28,6 +29,7 @@ export default function ClientClockComponent() {
         accuracy,
       });
       setError(null);
+      setLocationPermissionGranted(true);
     };
 
     const handleGeolocationError = (err) => {
@@ -35,6 +37,7 @@ export default function ClientClockComponent() {
       setError(
         `Geolocation failed: ${err.message}. Please enable location permissions or use a device with GPS.`
       );
+      setLocationPermissionGranted(false);
     };
 
     const watchId = navigator.geolocation.watchPosition(
@@ -52,7 +55,7 @@ export default function ClientClockComponent() {
 
   useEffect(() => {
     if (session?.user?.id) {
-      checkActiveShift();
+      checkActiveShift(); // Only check for existing shifts
     }
   }, [session]);
 
@@ -121,16 +124,21 @@ export default function ClientClockComponent() {
       }
     } catch (err) {
       console.error("Error checking active shift:", err);
+      setError("Failed to check active shift.");
     }
   };
 
   const handleClockIn = async () => {
+    if (typeof window === 'undefined' || !document.activeElement.matches('button')) {
+      return; // Exit if not triggered by a button click
+    }
+
     if (!session) {
       setError("Please log in first.");
       return;
     }
-    if (!location) {
-      setError("Location not available yet.");
+    if (!locationPermissionGranted || !location) {
+      setError("Location permissions not granted or location not available.");
       return;
     }
     if (activeShiftId) {
@@ -216,18 +224,18 @@ export default function ClientClockComponent() {
         longitude: location.longitude,
         note: note || null,
       };
-      console.log("User ID from session:", session.user.id); // Add this line
+      console.log("User ID from session:", session.user.id);
       console.log("Mutation variables:", variables);
       const userQuery = `
-  query ($id: String!) {
-    user(id: $id) {
-      id
-      name
-    }
-  }
-`;
-const userResult = await request("http://localhost:3000/api/graphql", userQuery, { id: session.user.id });
-console.log("User from database:", userResult.user);
+        query ($id: String!) {
+          user(id: $id) {
+            id
+            name
+          }
+        }
+      `;
+      const userResult = await request("http://localhost:3000/api/graphql", userQuery, { id: session.user.id });
+      console.log("User from database:", userResult.user);
 
       const { createShift } = await request(
         "http://localhost:3000/api/graphql",
@@ -240,7 +248,7 @@ console.log("User from database:", userResult.user);
       setNote("");
     } catch (err) {
       console.error("Error during clock-in:", err);
-      setError(err.message);
+      setError(err.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -251,8 +259,8 @@ console.log("User from database:", userResult.user);
       setError("Please log in first.");
       return;
     }
-    if (!location) {
-      setError("Location not available yet.");
+    if (!locationPermissionGranted || !location) {
+      setError("Location permissions not granted or location not available.");
       return;
     }
     if (!activeShiftId) {

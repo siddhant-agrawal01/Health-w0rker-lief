@@ -25,9 +25,10 @@ const authOptions = {
             create: {
               email: credentials.username,
               name: credentials.username,
-              role: 'CARE_WORKER',
+              role: 'MANAGER',
             },
           });
+          console.log('Authorized user:', user); // Add debug logging
           return { id: user.id, name: user.name, email: user.email, role: user.role };
         }
         return null;
@@ -36,7 +37,7 @@ const authOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log('Sign-in attempt:', { user, account, profile }); // Add debug logging
+      console.log('Sign-in attempt:', { user, account, profile });
       if (account.provider === 'google') {
         try {
           const existingUser = await prisma.user.findUnique({
@@ -50,14 +51,16 @@ const authOptions = {
                 id: newId,
                 name: user.name,
                 email: user.email.toLowerCase(),
-                role: 'CARE_WORKER',
+                role: 'MANAGER',
               },
             });
-            console.log(`Created new user: ${newUser.email} with ID: ${newUser.id}`);
-            user.id = newUser.id;
+            console.log(`Created new user: ${newUser.email} with ID: ${newUser.id}, Role: ${newUser.role}`);
+            user.id = newId;
+            user.role = newUser.role; // Ensure role is set in user object
           } else {
-            console.log(`User ${existingUser.email} already exists with ID: ${existingUser.id}`);
+            console.log(`User ${existingUser.email} already exists with ID: ${existingUser.id}, Role: ${existingUser.role}`);
             user.id = existingUser.id;
+            user.role = existingUser.role; // Ensure role is set in user object
           }
           return true;
         } catch (error) {
@@ -69,10 +72,14 @@ const authOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email.toLowerCase() },
+        });
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        console.log('JWT token:', token); // Add debug logging
+        token.role = dbUser?.role || user.role;
+        console.log('JWT token:', token);
       }
       return token;
     },
@@ -81,10 +88,13 @@ const authOptions = {
         session.user.id = token.id;
         session.user.name = token.name;
         session.user.email = token.email;
-        console.log('Session:', session); // Add debug logging
+        session.user.role = token.role;
+        console.log('Session:', session);
       }
       return session;
     },
+   
+    
   },
   pages: {
     signIn: '/auth/signin',

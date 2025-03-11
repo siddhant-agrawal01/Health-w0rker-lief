@@ -2,7 +2,7 @@ import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import resolvers from '@/lib/resolvers';
+import resolvers from '../../../lib/resolvers';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

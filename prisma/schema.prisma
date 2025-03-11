@@ -7,11 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  MANAGER
+  CARE_WORKER
+}
+
 model User {
   id         String   @id @default(uuid())
   name       String
   email      String   @unique
-  role       String   // e.g., "MANAGER" or "CARE_WORKER"
+  role       Role     @default(CARE_WORKER)
   hospitalId String?
   hospital   Hospital? @relation(fields: [hospitalId], references: [id])
   shifts     Shift[]

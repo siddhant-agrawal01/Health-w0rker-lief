@@ -29,14 +29,31 @@ type Shift {
   note: String
 }
 
+type DailyStats {
+  date: String!
+  averageHours: Float!
+  staffCount: Int!
+}
+
+type WeeklyReport {
+  userId: String!
+  totalHours: Float!
+}
+
 type Query {
   users: [User]
   user(id: String!): User
   hospitals: [Hospital]
   hospital(id: String!): Hospital
-  shifts(where: ShiftWhereInput): [Shift]  # Add the where argument
+  shifts(where: ShiftWhereInput): [Shift]
   shift(id: String!): Shift
+  activeShifts: [Shift!]!
+  dailyStats(startDate: String!, endDate: String!): [DailyStats!]!  # New
+  weeklyReport(startDate: String!, endDate: String!): [WeeklyReport!]!  # New
 }
+
+
+
 
 type Mutation {
   createUser(name: String!, email: String!, role: String!, hospitalId: String): User
