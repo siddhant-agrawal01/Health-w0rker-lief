@@ -1,5 +1,6 @@
+// app/clock/ClientClockComponent.js
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { request } from "graphql-request";
 
@@ -21,42 +22,33 @@ export default function ClientClockComponent() {
     }
 
     const handleGeolocation = (position) => {
-      console.log("Raw Geolocation:", position);
       const { latitude, longitude, accuracy } = position.coords;
-      setLocation({
-        latitude,
-        longitude,
-        accuracy,
-      });
+      setLocation({ latitude, longitude, accuracy });
       setError(null);
       setLocationPermissionGranted(true);
     };
 
     const handleGeolocationError = (err) => {
       console.error("Geolocation Error:", err);
-      setError(
-        `Geolocation failed: ${err.message}. Please enable location permissions or use a device with GPS.`
-      );
+      let message = "Geolocation failed. Please enable location permissions.";
+      if (err.code === 1) message = "Location access denied by user.";
+      else if (err.code === 2) message = "Location unavailable.";
+      else if (err.code === 3) message = "Location request timed out.";
+      setError(message);
       setLocationPermissionGranted(false);
     };
 
     const watchId = navigator.geolocation.watchPosition(
       handleGeolocation,
       handleGeolocationError,
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   useEffect(() => {
-    if (session?.user?.id) {
-      checkActiveShift(); // Only check for existing shifts
-    }
+    if (session?.user?.id) checkActiveShift();
   }, [session]);
 
   useEffect(() => {
@@ -66,14 +58,10 @@ export default function ClientClockComponent() {
     }
 
     const interval = setInterval(() => {
-      const start = new Date(startTime);
-      const now = new Date();
-      const diff = Math.floor((now - start) / 1000);
-
+      const diff = Math.floor((new Date() - new Date(startTime)) / 1000);
       const hours = Math.floor(diff / 3600);
       const minutes = Math.floor((diff % 3600) / 60);
       const seconds = diff % 60;
-
       setShiftDuration(`${hours}h ${minutes}m ${seconds}s`);
     }, 1000);
 
@@ -81,20 +69,18 @@ export default function ClientClockComponent() {
   }, [activeShiftId, startTime]);
 
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
+    const R = 6371; // Earth's radius in km
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) *
-        Math.cos(lat2 * (Math.PI / 180)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
-  const checkActiveShift = async () => {
+  const checkActiveShift = useCallback(async () => {
+    if (!session?.user?.id) return;
     try {
       const query = `
         query ($where: ShiftWhereInput!) {
@@ -104,17 +90,8 @@ export default function ClientClockComponent() {
           }
         }
       `;
-      const variables = {
-        where: {
-          userId: session.user.id,
-          endTime: null,
-        },
-      };
-      const { shifts } = await request(
-        "http://localhost:3000/api/graphql",
-        query,
-        variables
-      );
+      const variables = { where: { userId: session.user.id, endTime: null } };
+      const { shifts } = await request("http://localhost:3000/api/graphql", query, variables);
       if (shifts.length > 0) {
         setActiveShiftId(shifts[0].id);
         setStartTime(shifts[0].startTime);
@@ -123,22 +100,19 @@ export default function ClientClockComponent() {
         setStartTime(null);
       }
     } catch (err) {
-      console.error("Error checking active shift:", err);
+      console.error("Check active shift error:", err);
       setError("Failed to check active shift.");
     }
-  };
+  }, [session]);
 
-  const handleClockIn = async () => {
-    if (typeof window === 'undefined' || !document.activeElement.matches('button')) {
-      return; // Exit if not triggered by a button click
-    }
-
+  const handleClockIn = async (e) => {
+    e.preventDefault(); // Ensure triggered by button
     if (!session) {
       setError("Please log in first.");
       return;
     }
     if (!locationPermissionGranted || !location) {
-      setError("Location permissions not granted or location not available.");
+      setError("Location not available. Please enable permissions.");
       return;
     }
     if (activeShiftId) {
@@ -148,7 +122,24 @@ export default function ClientClockComponent() {
 
     setLoading(true);
     try {
-      const query = `
+      // Verify user exists
+      const userQuery = `
+        query ($id: String!) {
+          user(id: $id) {
+            id
+            name
+          }
+        }
+      `;
+      const userResult = await request("http://localhost:3000/api/graphql", userQuery, { id: session.user.id });
+      if (!userResult.user) {
+        setError("User not found in database. Please contact support.");
+        setLoading(false);
+        return;
+      }
+
+      // Check hospital proximity
+      const hospitalQuery = `
         query {
           hospitals {
             id
@@ -158,57 +149,30 @@ export default function ClientClockComponent() {
           }
         }
       `;
-      const { hospitals } = await request(
-        "http://localhost:3000/api/graphql",
-        query
-      );
-      console.log("Fetched Hospitals:", hospitals);
-
-      if (!hospitals || hospitals.length === 0) {
-        setError("No hospitals found in the database.");
+      const { hospitals } = await request("http://localhost:3000/api/graphql", hospitalQuery);
+      if (!hospitals?.length) {
+        setError("No hospitals configured.");
         setLoading(false);
         return;
       }
 
-      let withinPerimeter = false;
-      for (const hospital of hospitals) {
-        console.log(
-          "Hospital Coords:",
-          parseFloat(hospital.latitude),
-          parseFloat(hospital.longitude)
-        );
+      const withinPerimeter = hospitals.some(hospital => {
         const distance = calculateDistance(
           location.latitude,
           location.longitude,
           parseFloat(hospital.latitude),
           parseFloat(hospital.longitude)
         );
-        console.log(
-          `Distance to ${hospital.id}: ${distance} km (Radius: ${hospital.radius} km)`
-        );
-        if (distance <= hospital.radius) {
-          withinPerimeter = true;
-          break;
-        }
-      }
+        return distance <= hospital.radius;
+      });
 
       if (!withinPerimeter) {
-        setError(
-          `You are not within the required radius of any hospital. Closest hospital radius: ${
-            hospitals[0]?.radius || "unknown"
-          } km`
-        );
+        setError("You are not within any hospital’s radius.");
         setLoading(false);
         return;
       }
 
-      const currentTime = new Date().toISOString().replace(/\0/g, "");
-      console.log("Generated startTime:", currentTime);
-      console.log("User ID:", session.user.id);
-      console.log("Latitude:", location.latitude);
-      console.log("Longitude:", location.longitude);
-      console.log("Note:", note || null);
-
+      // Create shift
       const mutation = `
         mutation ($userId: String!, $startTime: DateTime!, $latitude: Float!, $longitude: Float!, $note: String) {
           createShift(userId: $userId, startTime: $startTime, latitude: $latitude, longitude: $longitude, note: $note) {
@@ -219,52 +183,36 @@ export default function ClientClockComponent() {
       `;
       const variables = {
         userId: session.user.id,
-        startTime: currentTime,
+        startTime: new Date().toISOString(),
         latitude: location.latitude,
         longitude: location.longitude,
         note: note || null,
       };
-      console.log("User ID from session:", session.user.id);
-      console.log("Mutation variables:", variables);
-      const userQuery = `
-        query ($id: String!) {
-          user(id: $id) {
-            id
-            name
-          }
-        }
-      `;
-      const userResult = await request("http://localhost:3000/api/graphql", userQuery, { id: session.user.id });
-      console.log("User from database:", userResult.user);
-
-      const { createShift } = await request(
-        "http://localhost:3000/api/graphql",
-        mutation,
-        variables
-      );
+      const { createShift } = await request("http://localhost:3000/api/graphql", mutation, variables);
       setActiveShiftId(createShift.id);
       setStartTime(createShift.startTime);
-      alert("Clocked in successfully!");
       setNote("");
+      alert("Clocked in successfully!");
     } catch (err) {
-      console.error("Error during clock-in:", err);
-      setError(err.message || "An unexpected error occurred.");
+      console.error("Clock-in error:", err);
+      setError(err.response?.errors?.[0]?.message || "Failed to clock in.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClockOut = async () => {
+  const handleClockOut = async (e) => {
+    e.preventDefault();
     if (!session) {
       setError("Please log in first.");
       return;
     }
     if (!locationPermissionGranted || !location) {
-      setError("Location permissions not granted or location not available.");
+      setError("Location not available.");
       return;
     }
     if (!activeShiftId) {
-      setError("You are not clocked in.");
+      setError("No active shift to clock out from.");
       return;
     }
 
@@ -286,18 +234,18 @@ export default function ClientClockComponent() {
       await request("http://localhost:3000/api/graphql", mutation, variables);
       setActiveShiftId(null);
       setStartTime(null);
-      alert("Clocked out successfully!");
       setNote("");
+      setShiftDuration("");
+      alert("Clocked out successfully!");
     } catch (err) {
-      setError(err.message);
+      console.error("Clock-out error:", err);
+      setError(err.response?.errors?.[0]?.message || "Failed to clock out.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (status === "loading") {
-    return <p className="text-center text-gray-500">Loading...</p>;
-  }
+  if (status === "loading") return <p className="text-center text-gray-500">Loading...</p>;
 
   if (!session) {
     return (
@@ -306,7 +254,7 @@ export default function ClientClockComponent() {
           <p className="text-red-500 mb-4">{error || "Please log in first."}</p>
           <button
             onClick={() => signIn()}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200"
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Log In
           </button>
@@ -318,16 +266,12 @@ export default function ClientClockComponent() {
   return (
     <div className="flex justify-center items-center h-screen bg-gradient-to-r from-blue-100 to-blue-300">
       <div className="p-8 bg-white rounded-lg shadow-lg max-w-md w-full">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">
-          Healthcare Shift Clock
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">Healthcare Shift Clock</h1>
         <p className="text-gray-600 mb-2">Welcome, {session.user.name}!</p>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         {location ? (
           <p className="text-gray-600 mb-4">
-            Location: {location.latitude.toFixed(4)},{" "}
-            {location.longitude.toFixed(4)} (Accuracy:{" "}
-            {location.accuracy ? `${location.accuracy.toFixed(0)}m` : "N/A"})
+            Location: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)} (Accuracy: {location.accuracy?.toFixed(0) || "N/A"}m)
           </p>
         ) : (
           <p className="text-gray-600 mb-4">Fetching location...</p>
@@ -337,7 +281,7 @@ export default function ClientClockComponent() {
             <p className="text-green-700 font-semibold">
               Active Shift: Started at {new Date(startTime).toLocaleString()}
             </p>
-            <p className="text-green-700">Shift Duration: {shiftDuration}</p>
+            <p className="text-green-700">Duration: {shiftDuration}</p>
           </div>
         )}
         <input
@@ -351,28 +295,20 @@ export default function ClientClockComponent() {
           <button
             onClick={handleClockIn}
             disabled={loading || activeShiftId}
-            className={`flex-1 px-4 py-2 rounded-lg text-white font-semibold transition duration-200 ${
-              loading || activeShiftId
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
+            className={`flex-1 px-4 py-2 rounded-lg text-white ${loading || activeShiftId ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
           >
             Clock In
           </button>
           <button
             onClick={handleClockOut}
             disabled={loading || !activeShiftId}
-            className={`flex-1 px-4 py-2 rounded-lg text-white font-semibold transition duration-200 ${
-              loading || !activeShiftId
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-red-600 hover:bg-red-700"
-            }`}
+            className={`flex-1 px-4 py-2 rounded-lg text-white ${loading || !activeShiftId ? "bg-gray-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"}`}
           >
             Clock Out
           </button>
         </div>
         <a href="/history">
-          <button className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition duration-200">
+          <button className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
             View History
           </button>
         </a>

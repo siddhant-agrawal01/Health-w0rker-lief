@@ -1,6 +1,7 @@
+// app/api/auth/[...nextauth]/route.js
 import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -18,17 +19,18 @@ const authOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        // For testing only; replace with proper auth in production
         if (credentials.username === 'user' && credentials.password === 'pass') {
           const user = await prisma.user.upsert({
-            where: { email: credentials.username },
+            where: { email: `${credentials.username}@example.com` },
             update: { name: credentials.username },
             create: {
-              email: credentials.username,
+              email: `${credentials.username}@example.com`,
               name: credentials.username,
               role: 'MANAGER',
             },
           });
-          console.log('Authorized user:', user); // Add debug logging
+          console.log('Credentials user authorized:', user);
           return { id: user.id, name: user.name, email: user.email, role: user.role };
         }
         return null;
@@ -40,61 +42,63 @@ const authOptions = {
       console.log('Sign-in attempt:', { user, account, profile });
       if (account.provider === 'google') {
         try {
-          const existingUser = await prisma.user.findUnique({
-            where: { email: user.email.toLowerCase() },
-          });
-    
-          if (!existingUser) {
+          const email = user.email.toLowerCase();
+          let dbUser = await prisma.user.findUnique({ where: { email } });
+
+          if (!dbUser) {
             const newId = require('crypto').randomUUID();
-            const newUser = await prisma.user.create({
+            dbUser = await prisma.user.create({
               data: {
                 id: newId,
                 name: user.name,
-                email: user.email.toLowerCase(),
+                email,
                 role: 'MANAGER',
               },
             });
-            console.log(`Created new user: ${newUser.email} with ID: ${newUser.id}, Role: ${newUser.role}`);
-            user.id = newId;
-            user.role = newUser.role; // Ensure role is set in user object
+            console.log(`Created user: ${dbUser.email} with ID: ${dbUser.id}`);
+
+            // Verify creation
+            const verifiedUser = await prisma.user.findUnique({ where: { id: newId } });
+            if (!verifiedUser) {
+              console.error('User creation failed:', newId);
+              return false;
+            }
           } else {
-            console.log(`User ${existingUser.email} already exists with ID: ${existingUser.id}, Role: ${existingUser.role}`);
-            user.id = existingUser.id;
-            user.role = existingUser.role; // Ensure role is set in user object
+            console.log(`Existing user: ${dbUser.email} with ID: ${dbUser.id}`);
           }
+
+          user.id = dbUser.id;
+          user.role = dbUser.role;
           return true;
         } catch (error) {
-          console.error('Error syncing user with Prisma:', error);
+          console.error('Sign-in error:', error.message, error.stack);
           return false;
         }
       }
-      return true;
+      return true; // Credentials provider handled in authorize
     },
     async jwt({ token, user }) {
       if (user) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: user.email.toLowerCase() },
-        });
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        token.role = dbUser?.role || user.role;
-        console.log('JWT token:', token);
+        token.role = user.role;
+        console.log('JWT token set:', token);
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
-        session.user.name = token.name;
-        session.user.email = token.email;
-        session.user.role = token.role;
-        console.log('Session:', session);
+      if (token) {
+        session.user = {
+          id: token.id,
+          name: token.name,
+          email: token.email,
+          role: token.role,
+        };
+        console.log('Session updated:', session);
       }
       return session;
     },
-   
-    
   },
   pages: {
     signIn: '/auth/signin',
