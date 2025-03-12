@@ -1,91 +1,16 @@
-// "use client";
-// import { useSession } from 'next-auth/react';
-// import { useRouter } from 'next/navigation';
-// import Link from 'next/link';
-// import { useEffect } from 'react';
-
-// export default function ManagerLayout({ children }) {
-//   const { data: session, status } = useSession();
-//   const router = useRouter();
-
-//   useEffect(() => {
-//     if (status === 'loading') return;
-//     console.log('Session data:', session);
-//     console.log('Session user role:', session?.user?.role);
-//     console.log('Role check result:', session?.user?.role === 'MANAGER');
-//     if (!session || session.user.role !== 'MANAGER') {
-//       console.log('Redirecting to /clock. Role:', session?.user?.role);
-//       router.push('/clock');
-//     }
-//   }, [session, status, router]);
-
-//   if (status === 'loading') {
-//     return <div className="flex justify-center items-center h-screen">Loading...</div>;
-//   }
-
-//   if (!session || session.user.role !== 'MANAGER') {
-//     return null; // Prevent rendering until redirect
-//   }
-
-//   return (
-//     <div className="flex min-h-screen bg-gray-100">
-//       {/* Sidebar */}
-//       <aside className="w-64 bg-blue-800 text-white p-4 shadow-lg">
-//         <h1 className="text-2xl font-bold mb-6">Manager Dashboard</h1>
-//         <nav>
-//           <ul>
-//             <li className="mb-4">
-//               <Link href="/dashboard/manager" className="block p-2 rounded hover:bg-blue-700 transition">
-//                 Shift Monitoring
-//               </Link>
-//             </li>
-//             <li className="mb-4">
-//               <Link href="/dashboard/manager/analytics" className="block p-2 rounded hover:bg-blue-700 transition">
-//                 Analytics
-//               </Link>
-//             </li>
-//             <li>
-//               <Link href="/clock" className="block p-2 rounded hover:bg-blue-700 transition">
-//                 Clock In/Out
-//               </Link>
-//             </li>
-//           </ul>
-//         </nav>
-//       </aside>
-
-//       {/* Main Content */}
-//       <main className="flex-1 p-6">
-//         <div className="max-w-7xl mx-auto">
-//           <div className="flex justify-between items-center mb-6">
-//             <h1 className="text-3xl font-semibold text-gray-800">Welcome, {session.user.name}</h1>
-//             <button
-//               onClick={() => router.push('/api/auth/signout')}
-//               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-//             >
-//               Sign Out
-//             </button>
-//           </div>
-//           {children}
-//         </div>
-//       </main>
-//     </div>
-//   );
-// }
-
-
 "use client";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button"; // shadcn/ui Button component
 import { signOut } from "next-auth/react";
-import { Menu, X } from "lucide-react"; // Icons for hamburger menu
+import { Menu, X, BarChart2, Clock, Users, Home, LogOut } from "lucide-react";
 
 export default function ManagerLayout({ children }) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for sidebar toggle
+  const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Role-based access check
   useEffect(() => {
@@ -95,13 +20,38 @@ export default function ManagerLayout({ children }) {
     }
   }, [session, status, router]);
 
-  // Toggle sidebar
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const navItems = [
+    { name: "Dashboard", href: "/dashboard/manager", icon: <Home size={20} /> },
+    {
+      name: "Shift Monitoring",
+      href: "/dashboard/manager",
+      icon: <Users size={20} />,
+    },
+    {
+      name: "Analytics",
+      href: "/dashboard/manager/analytics",
+      icon: <BarChart2 size={20} />,
+    },
+    { name: "Clock In/Out", href: "/clock", icon: <Clock size={20} /> },
+  ];
+
+  const isActive = (path) => {
+    if (path === "/dashboard/manager" && pathname === "/dashboard/manager") {
+      return true;
+    }
+    return pathname.startsWith(path) && path !== "/dashboard/manager";
+  };
+
   if (status === "loading") {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   if (!session || session.user.role !== "MANAGER") {
@@ -109,88 +59,106 @@ export default function ManagerLayout({ children }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-blue-800 text-white transform transition-transform duration-300 ease-in-out ${
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar for desktop */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:static md:translate-x-0 md:w-64 md:flex md:flex-col md:shadow-lg`}
+        } md:static md:translate-x-0`}
       >
-        {/* Sidebar Header */}
-        <div className="p-4 border-b border-blue-700">
-          <h2 className="text-2xl font-bold">Manager Dashboard</h2>
+        <div className="flex flex-col h-full">
+          {/* Sidebar Header */}
+          <div className="px-6 py-5 border-b">
+            <h2 className="text-xl font-bold text-blue-600">Health Manager</h2>
+          </div>
+
+          {/* Close button for mobile */}
+          <button
+            className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 md:hidden"
+            onClick={toggleSidebar}
+          >
+            <X size={20} />
+          </button>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  isActive(item.href)
+                    ? "bg-blue-50 text-blue-600"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+                onClick={() => {
+                  if (window.innerWidth < 768) {
+                    setIsSidebarOpen(false);
+                  }
+                }}
+              >
+                <span className="mr-3">{item.icon}</span>
+                <span>{item.name}</span>
+              </Link>
+            ))}
+          </nav>
+
+          {/* Sidebar Footer */}
+          <div className="p-4  border-t">
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <LogOut size={18} className="mr-3" />
+              <span className="text-red-500">Sign Out</span>
+            </button>
+          </div>
         </div>
+      </aside>
 
-        {/* Sidebar Navigation */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            <li>
-              <Link href="/dashboard/manager">
-                <span className="block p-2 rounded hover:bg-blue-700 transition-colors duration-200">
-                  Shift Monitoring
-                </span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/dashboard/manager/analytics">
-                <span className="block p-2 rounded hover:bg-blue-700 transition-colors duration-200">
-                  Analytics
-                </span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/clock">
-                <span className="block p-2 rounded hover:bg-blue-700 transition-colors duration-200">
-                  Clock In/Out
-                </span>
-              </Link>
-            </li>
-          </ul>
-        </nav>
-
-        {/* Sidebar Footer (Optional) */}
-        <div className="p-4 border-t border-blue-700">
-          <p className="text-sm">© 2025 Healthcare App</p>
-        </div>
-      </div>
-
-      {/* Overlay for mobile when sidebar is open */}
+      {/* Overlay for mobile */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black opacity-50 z-40 md:hidden"
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 z-40 md:hidden"
           onClick={toggleSidebar}
         />
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1">
         {/* Header */}
-        <header className="bg-white shadow p-4 flex justify-between items-center">
-          <div className="flex items-center">
-            {/* Hamburger Menu (visible on mobile) */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={toggleSidebar}
-              aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
-            >
-              {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </Button>
-            <h1 className="text-xl font-semibold text-gray-800 ml-2">
-              Welcome, {session.user.name}
-            </h1>
+        <header className="sticky top-0 z-10 bg-white shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center">
+              <button
+                className="p-2 rounded-md md:hidden"
+                onClick={toggleSidebar}
+              >
+                <Menu size={24} />
+              </button>
+              <h1 className="hidden md:block text-lg font-medium text-gray-800 ml-2">
+                {pathname.includes("analytics")
+                  ? "Analytics Dashboard"
+                  : "Shift Monitoring"}
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">
+                  {session.user.name}
+                </p>
+                <p className="text-xs text-gray-500">{session.user.email}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
+                {session.user.name?.charAt(0).toUpperCase()}
+              </div>
+            </div>
           </div>
-          <Button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="bg-red-500 hover:bg-red-600 text-white transition-colors duration-200"
-          >
-            Sign Out
-          </Button>
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6">
+        <main className="p-4 md:p-6 max-w-7xl mx-auto">
           <div className="animate-fadeIn">{children}</div>
         </main>
       </div>
