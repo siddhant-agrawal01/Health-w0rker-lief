@@ -30,7 +30,7 @@ export default function ClientClockComponent() {
   const [activeShiftId, setActiveShiftId] = useState(null);
   const [startTime, setStartTime] = useState(null);
   const [shiftDuration, setShiftDuration] = useState("");
-
+  const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
   useEffect(() => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser.");
@@ -75,7 +75,7 @@ export default function ClientClockComponent() {
       `;
       const variables = { where: { userId: session.user.id, endTime: null } };
       const { shifts } = await request(
-        "http://localhost:3000/api/graphql",
+        GRAPHQL_ENDPOINT,
         query,
         variables
       );
@@ -185,7 +185,7 @@ export default function ClientClockComponent() {
         }
       `;
       const userResult = await request(
-        "http://localhost:3000/api/graphql",
+        GRAPHQL_ENDPOINT,
         userQuery,
         { id: session.user.id }
       );
@@ -207,7 +207,7 @@ export default function ClientClockComponent() {
         }
       `;
       const { hospitals } = await request(
-        "http://localhost:3000/api/graphql",
+        GRAPHQL_ENDPOINT,
         hospitalQuery
       );
       if (!hospitals?.length) {
@@ -249,7 +249,7 @@ export default function ClientClockComponent() {
         note: note || null,
       };
       const { createShift } = await request(
-        "http://localhost:3000/api/graphql",
+        GRAPHQL_ENDPOINT,
         mutation,
         variables
       );
@@ -308,7 +308,7 @@ export default function ClientClockComponent() {
         note: note || null,
       };
       const { updateShift } = await request(
-        "http://localhost:3000/api/graphql",
+        GRAPHQL_ENDPOINT,
         mutation,
         variables
       );
