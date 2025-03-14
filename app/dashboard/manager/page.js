@@ -26,7 +26,7 @@ export default function ShiftMonitoringDashboard() {
           }
         }
       `;
-      const data = await request("http://localhost:3000/api/graphql", query);
+      const data = await request( GRAPHQL_ENDPOINT, query);
       setActiveShifts(data.activeShifts);
       setError(null);
     } catch (err) {

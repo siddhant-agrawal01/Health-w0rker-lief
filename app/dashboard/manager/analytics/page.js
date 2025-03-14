@@ -53,12 +53,12 @@ export default function AnalyticsDashboard() {
       const variables = { startDate, endDate };
 
       const dailyStatsData = await request(
-        "http://localhost:3000/api/graphql",
+        GRAPHQL_ENDPOINT,
         dailyStatsQuery,
         variables
       );
       const weeklyReportData = await request(
-        "http://localhost:3000/api/graphql",
+        GRAPHQL_ENDPOINT,
         weeklyReportQuery,
         variables
       );

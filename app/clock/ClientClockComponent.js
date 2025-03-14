@@ -141,7 +141,7 @@ export default function ClientClockComponent() {
   //     `;
   //     const variables = { where: { userId: session.user.id, endTime: null } };
   //     const { shifts } = await request(
-  //       "http://localhost:3000/api/graphql",
+  //       GRAPHQL_ENDPOINT,
   //       query,
   //       variables
   //     );

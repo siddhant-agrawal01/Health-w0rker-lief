@@ -32,11 +32,7 @@ export default function HistoryPage() {
             }
           `;
           const variables = { userId: session.user.id };
-          const data = await request(
-            "http://localhost:3000/api/graphql",
-            query,
-            variables
-          );
+          const data = await request(GRAPHQL_ENDPOINT, query, variables);
           setShifts(data.shifts);
           setError(null);
         } catch (err) {
