@@ -4,6 +4,10 @@
 **Note:** If you test the Vercel deployed app, you will not be able to clock in because the hospital details are configured according to my local area. To see the application working properly, check the video demonstration below or set up the application locally with your own area's hospital details.
 
 [Video Demonstration Link]
+
+[Screencast from 2025-03-14 20-25-42.webm](https://github.com/user-attachments/assets/63f0f918-575f-483c-926a-c201374c5d1f)
+
+
 # Health Worker Application
 
 A comprehensive web application for healthcare workers to clock in and out of their shifts efficiently. This platform is accessible via both web and mobile, allowing hospitals and other healthcare organizations to track and manage shift timings accurately.
