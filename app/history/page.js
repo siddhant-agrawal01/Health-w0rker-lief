@@ -16,7 +16,6 @@ export default function HistoryPage() {
     if (!session || session.user.role !== "CARE_WORKER") {
       router.push("/clock"); // Redirect if not a care worker
     } else {
-      // Defining fetchShifts inside useEffect to avoid dependency issues
       const fetchShifts = async () => {
         setLoading(true);
         try {
