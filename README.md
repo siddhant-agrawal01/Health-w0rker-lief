@@ -87,13 +87,14 @@ This application is built with Next.js, leveraging modern web technologies to pr
    yarn install
    ```
 
-3. Set up environment variables by creating a `.env` file:
+3. Set up environment variables by creating a `.env` file ,Use my env for testing purpose Dont misuse i will delete it after 1 week!:
    ```
-   DATABASE_URL="postgresql://username:password@localhost:5432/health_worker_db?schema=public"
-   GOOGLE_CLIENT_ID="your-google-client-id"
-   GOOGLE_CLIENT_SECRET="your-google-client-secret"
-   NEXTAUTH_URL="http://localhost:3000"
-   NEXTAUTH_SECRET="generated-secret-key"
+   DATABASE_URL="postgresql://neondb_owner:RHsCfxT2tS7E@ep-hidden-forest-a4jwclaa-pooler.us-east-1.aws.neon.tech/lief?sslmode=require"
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your-secret-here
+   GOOGLE_CLIENT_ID=1028796806802-cfqstt1ff2td7vmhi1tosr42uqkoce9j.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=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
+   NEXT_PUBLIC_GRAPHQL_ENDPOINT=http://localhost:3000/api/graphql
    ```
 
 ### Database Setup
