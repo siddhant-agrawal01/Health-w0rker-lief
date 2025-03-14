@@ -25,7 +25,6 @@ export default function ManagerLayout({ children }) {
   };
 
   const navItems = [
-    { name: "Dashboard", href: "/dashboard/manager", icon: <Home size={20} /> },
     {
       name: "Shift Monitoring",
       href: "/dashboard/manager",
