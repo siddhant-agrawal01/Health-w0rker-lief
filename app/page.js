@@ -18,14 +18,12 @@ export default function LandingPage() {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
 
-  // Redirect logged-in users to their dashboard
   useEffect(() => {
     if (status === "authenticated") {
       router.push("/clock");
     }
   }, [status, router]);
 
-  // Handle navbar transparency on scroll
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);

@@ -28,7 +28,7 @@ model Hospital {
   name      String
   latitude  Decimal
   longitude Decimal
-  radius    Float   // Radius in kilometers for clock-in perimeter
+  radius    Float   
   users     User[]
 }
 
@@ -36,8 +36,8 @@ model Shift {
   id         String   @id @default(uuid())
   userId     String
   user       User     @relation(fields: [userId], references: [id])
-  startTime  DateTime // Changed from String
-  endTime    DateTime? // Changed from String?
+  startTime  DateTime 
+  endTime    DateTime? 
   latitude   Float
   longitude  Float
   note       String?

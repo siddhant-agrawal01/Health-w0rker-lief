@@ -1,8 +1,8 @@
-'use client'; 
+"use client";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { SessionProvider } from 'next-auth/react';
-import  SonnerProvider  from './providers/SonnerProvider';
+import { SessionProvider } from "next-auth/react";
+import SonnerProvider from "./providers/SonnerProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,13 +20,8 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-       
-          <SessionProvider>
-            {children}
-            </SessionProvider>
-                         <SonnerProvider/>
-
-       
+        <SessionProvider>{children}</SessionProvider>
+        <SonnerProvider />
       </body>
     </html>
   );
