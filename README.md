@@ -1,9 +1,14 @@
-
 ## Important Testing Note
 
 **Note:** If you test the Vercel deployed app, you will not be able to clock in because the hospital details are configured according to my local area. To see the application working properly, check the video demonstration below or set up the application locally with your own area's hospital details.
 
+You can check the analytics dashboard by logging in as a manager with these credentials:
+
+- Email: `manager@ashishhospital.com`
+- Password: `managerpass123`
+
 [Video Demonstration Link]
+
 # Health Worker Application
 
 A comprehensive web application for healthcare workers to clock in and out of their shifts efficiently. This platform is accessible via both web and mobile, allowing hospitals and other healthcare organizations to track and manage shift timings accurately.
@@ -164,4 +169,3 @@ To learn more about Next.js, take a look at the following resources:
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
