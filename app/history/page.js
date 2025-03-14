@@ -11,7 +11,6 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Handle role check and data fetching
   useEffect(() => {
     if (status === "loading") return; // Wait for session to load
     if (!session || session.user.role !== "CARE_WORKER") {
