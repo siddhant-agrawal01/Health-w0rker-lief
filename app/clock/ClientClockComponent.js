@@ -62,10 +62,40 @@ export default function ClientClockComponent() {
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
-
+  const checkActiveShift = useCallback(async () => {
+    if (!session?.user?.id) return;
+    try {
+      const query = `
+        query ($where: ShiftWhereInput!) {
+          shifts(where: $where) {
+            id
+            startTime
+          }
+        }
+      `;
+      const variables = { where: { userId: session.user.id, endTime: null } };
+      const { shifts } = await request(
+        "http://localhost:3000/api/graphql",
+        query,
+        variables
+      );
+      if (shifts.length > 0) {
+        setActiveShiftId(shifts[0].id);
+        setStartTime(shifts[0].startTime);
+      } else {
+        setActiveShiftId(null);
+        setStartTime(null);
+      }
+    } catch (err) {
+      console.error("Check active shift error:", err);
+      setError("Failed to check active shift.");
+    }
+  }, [session]);
   useEffect(() => {
     if (session?.user?.id) checkActiveShift();
-  }, [session]);
+  }, [session, checkActiveShift]);
+  
+ 
 
   useEffect(() => {
     if (!activeShiftId || !startTime) {
@@ -98,35 +128,35 @@ export default function ClientClockComponent() {
     return R * c;
   };
 
-  const checkActiveShift = useCallback(async () => {
-    if (!session?.user?.id) return;
-    try {
-      const query = `
-        query ($where: ShiftWhereInput!) {
-          shifts(where: $where) {
-            id
-            startTime
-          }
-        }
-      `;
-      const variables = { where: { userId: session.user.id, endTime: null } };
-      const { shifts } = await request(
-        "http://localhost:3000/api/graphql",
-        query,
-        variables
-      );
-      if (shifts.length > 0) {
-        setActiveShiftId(shifts[0].id);
-        setStartTime(shifts[0].startTime);
-      } else {
-        setActiveShiftId(null);
-        setStartTime(null);
-      }
-    } catch (err) {
-      console.error("Check active shift error:", err);
-      setError("Failed to check active shift.");
-    }
-  }, [session]);
+  // const checkActiveShift = useCallback(async () => {
+  //   if (!session?.user?.id) return;
+  //   try {
+  //     const query = `
+  //       query ($where: ShiftWhereInput!) {
+  //         shifts(where: $where) {
+  //           id
+  //           startTime
+  //         }
+  //       }
+  //     `;
+  //     const variables = { where: { userId: session.user.id, endTime: null } };
+  //     const { shifts } = await request(
+  //       "http://localhost:3000/api/graphql",
+  //       query,
+  //       variables
+  //     );
+  //     if (shifts.length > 0) {
+  //       setActiveShiftId(shifts[0].id);
+  //       setStartTime(shifts[0].startTime);
+  //     } else {
+  //       setActiveShiftId(null);
+  //       setStartTime(null);
+  //     }
+  //   } catch (err) {
+  //     console.error("Check active shift error:", err);
+  //     setError("Failed to check active shift.");
+  //   }
+  // }, [session]);
 
   const handleClockIn = async (e) => {
     e.preventDefault(); // Ensure triggered by button
