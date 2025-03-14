@@ -51,7 +51,7 @@ This application is built with Next.js, leveraging modern web technologies to pr
 ### User Authentication
 
 - Username & Password authentication
-- Google Authentication (OAuth via Auth0)
+- Google Authentication (Next-Auth)
 - Secure session management
 - User history dashboard
 
@@ -60,7 +60,7 @@ This application is built with Next.js, leveraging modern web technologies to pr
 - **Frontend:** Next.js with Tailwind CSS and ShadCN UI
 - **Backend:** GraphQL API
 - **Database:** PostgreSQL with Prisma ORM
-- **Authentication:** Auth0 with multiple sign-in methods
+- **Authentication:** Next-Auth
 
 ## Getting Started
 
