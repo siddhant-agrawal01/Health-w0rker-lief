@@ -10,6 +10,7 @@ export default function HistoryPage() {
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
 
   useEffect(() => {
     if (status === "loading") return; // Wait for session to load

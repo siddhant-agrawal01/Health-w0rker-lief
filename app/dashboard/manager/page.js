@@ -7,6 +7,7 @@ export default function ShiftMonitoringDashboard() {
   const [activeShifts, setActiveShifts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
 
   const fetchActiveShifts = async () => {
     setLoading(true);

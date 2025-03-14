@@ -21,6 +21,7 @@ export default function AnalyticsDashboard() {
     key: "totalHours",
     direction: "desc",
   });
+  const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
 
   const fetchAnalytics = async () => {
     setLoading(true);

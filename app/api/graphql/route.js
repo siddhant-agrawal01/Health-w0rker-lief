@@ -48,6 +48,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import resolvers from '../../../lib/resolvers';
 import { PrismaClient } from '@prisma/client';
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
